@@ -2,162 +2,12 @@ import re
 import json
 import argparse
 from sklearn.model_selection import train_test_split
-from openai import OpenAI
 import os
-from model_utils import model_response
-from prompts import return_model_prompt, return_tag_prompt, return_extract_prompt, return_segment_prompt
+from model_utils import model_response, get_peft_gemma, get_peft_llama
+from data_extract import get_gpt_response, return_extract_prompt, extract_data_from_response
+from gpt_tag_predict import make_tag_by_gpt_dataset
+import torch
 
-api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
-
-def get_gpt_response(prompt):
-
-    try:
-        response = client.chat.completions.create(
-        model = "gpt-4",
-        messages=[
-            {
-            "role": "user",
-            "content": f"{prompt}"
-            }
-        ],
-        temperature=0.9,
-        max_tokens=300,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-        )
-
-    except Exception as e:
-        error_str = str(e)
-        print("error: ", error_str)
-
-        return None
-    
-    if response.choices:
-        model_response = response.choices[0].message.content
-        return model_response
-    else:
-        return None
-
-def get_gpt_tag_response(prompt):
-    
-    try:
-        response = client.chat.completions.create(
-        model="gpt-3.5-turbo-0125",
-        messages=[
-            {
-            "role": "system",
-            "content": [
-                {
-                "type": "text",
-                "text": "You need to generate the next conversation based on the dialogue history. Before doing so, carefully review the candidates and choose the topic of the conversation wisely.\n"
-                }
-            ]
-            },
-            {
-            "role": "user",
-            "content": [
-                {
-                "type": "text",
-                "text": "Based on the provided conversation history, identify three responses that would appropriately continue the dialogue. Choose the response labeled \"everyday language\" only if no other options are suitable.\n\nConversation History:\nsidney : (sidney shows an assertive personality and expresses his intentions of giving advice to susan like an uncle) wait for me ill be right back its not my nature susie but ill talk to you like an uncle susan : (susan displays independence and self-assuredness in declining sidney's offer to act as an uncle) but i dont need an uncle sidney sidney : (sidney demonstrates a certain level of admiration toward susan , sidney plays a role of mediator between susan and her brother, and possibly between susan and j.j. , sidney has plans to meet j.j. in the near future , susan has a love message for j.j. about steve dallas that she wants sidney to deliver) no i mean because i admire you in fact more than admire you although thats neither here nor there susie dont sell your brother short talk this over with him i mean youll find him a real friend any message in case i see jj later\nCandidate Responses:\n0. susan observes sidneys tendency to be touchy 1. susan is in love with a man named steve 2. susan displays independence and selfassuredness in declining sidneys offer to act as an uncle 3. susan is experiencing romantic feelings for the first time with a man named steve dallas 4. susan is jjs sister 5. susan is upset with both sidney and steve 6. susan is contemplating her future including her decision on whether to join steve for a long tour and her plan to discuss her relationship with steve with her brother jj the next morning she is also exercising introspection reflecting on her feelings towards her familial relationships and her romantic interest 7. susan desires for sidney and steve to get along 8. susan hints at a lack of selfworth when calling herself a worthless rag 9. susan seeks validation for her own identity separate from her brother 10. susan is considering embarking on an eightmonth tour with steve 11. susan is in a state of high emotional distress 12. susan is possibly unaware of a family members illness 13. susan is helpless and somewhat disorganized 14. everyday language 15. susan mentions giving up steve and regrets the loneliness of her brother suggesting a matured sense of responsibility 16. susan had contact with mr dangelo and steve 17. susan made a visit to the hospital 18. susan is distraught and feels guilt and sorrow indicating an emotional and sensitive nature 19. susan feels constricted by her identity as her brothers sister 20. susan may be younger or less experienced in relationships\n\nSelect the Appropriate Responses:\nPlease specify the responses in the following format:\nnumber1 : candidate response text\nnumber2: candidate response text\nnumber3 : candidate response text"
-                }
-            ]
-            },
-            {
-            "role": "assistant",
-            "content": [
-                {
-                "type": "text",
-                "text": "1: susan is in love with a man named steve\n7: susan desires for sidney and steve to get along\n10: susan is considering embarking on an eight-month tour with steve"
-                }
-            ]
-            },
-            {
-                "role" : "user",
-                "content" : f"{prompt}"
-            }
-        ],
-        temperature=0,
-        max_tokens=1000,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-        )
-
-    except Exception as e:
-        error_str =str(e)
-        print("error:", error_str)
-        return None
-  
-    # 모델의 텍스트 응답 추출
-    if response.choices:
-        model_response = response.choices[0].message.content
-        return model_response
-    else:
-        return None
-    
-
-def get_gpt_segment_response(prompt):
-  try:
-    response = client.chat.completions.create(
-    model="gpt-3.5-turbo-0125",
-    messages=[
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"THUMPER is direct and confrontational, using strong language. He appears to be knowledgeable about psychodynamics, specifically repression.\"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. THUMPER is direct and confrontational.\n2. THUMPER uses strong language.\n3. THUMPER is knowledgeable about psychodynamics. specifically repression."
-      },
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"ADA seems to be inexperienced or lacks knowledge about farming and livestock, evident from her limited understanding of the uses of pigs besides hams.\"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. ADA lacks knowledge about farming and livestock.\n2. ADA has a limited understanding of the uses of pigs besides hams."
-      },
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"Anna's upcoming film, which begins shooting in L.A. on Tuesday, is her significant temporal information. \"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. Anna's upcoming film begins shooting in L.A. on Tuesday."
-      },
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"DOROTHY seems to have a threatening and unstable demeanor, and expresses a need for help.\"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. DOROTHY has a threatening and unstable demeanor. \n2. DOROTHY expresses a need for help."
-      },
-      {
-        "role": "user",
-        "content": f"{prompt}"
-      }
-      ],
-      temperature=0.3,
-      max_tokens=1000,
-      top_p=1,
-      frequency_penalty=0,
-      presence_penalty=0
-    )
-
-  except Exception as e:
-    error_str = str(e)
-    print("error: ", error_str)
-
-    return None
-  
-  if response.choices:
-      model_response = response.choices[0].message.content
-      return model_response
-  else:
-      return None
 
 def remove_parentheses(text):
     # Regex pattern to remove text within parentheses (handles nested parentheses by iterative removal)
@@ -188,146 +38,48 @@ def split_data(data, train_size=0.8, valid_size=0.1, test_size=0.1, random_state
     return train_data, valid_data, test_data
 
 def return_first_memory_set(speaker1, speaker2, conversations):
-  attr_list = [f"{speaker1}'s persona", f"{speaker2}'s persona", "Shared memory"]
-  
-  p1 = []
-  p2 = []
+  #오직 shared memory만 
   shared = []
 
   for session in conversations:
-    p1.extend(session[attr_list[0]])
-    p2.extend(session[attr_list[1]])
-    shared.extend(session[attr_list[2]])
+    shared.extend(session["Shared memory"])
 
-  return p1, p2, shared
+  return shared
 
 
-def make_tag_by_gpt_dataset(dialogue_history, candidates): #tag 추천 gpt-3.5
-  candidates_string = "\n".join([f"{idx}. {value}" for idx, value in enumerate(candidates)])
-  prompt = return_tag_prompt(dialogue_history, candidates_string)
-  #print(prompt)
-  print("Get GPT tag predict!")
-  response = get_gpt_tag_response(prompt)
-  gpt_choice = []
+def return_model_prompt(dia_text):
+  prompt = f"""
+Task: Generate the next response in a dialogue by focusing on the contextual cues detailed within parentheses in the dialogue history. Responses should be tailored according to the type of cue provided:
 
-  if response:
-    #print(response)
-    # 각 줄을 분리하여 리스트로 변환
-    try:
-      lines = response.strip().split('\n')
-      # 각 줄의 첫 번째 부분이 숫자인지 확인하고 숫자를 추출
-      numbers = [int(line.split(':')[0]) for line in lines]
-      #print("predict number:", numbers)  # 출력 예시: [2, 4, 8]
-      gpt_choice = numbers
-    except:
-      print("GPT가 출력 형식을 잘못했어요!")
+1. Memory-driven dialogues: If the cue within parentheses details specific character traits or background context, craft responses that reflect these memory-driven elements, ensuring character consistency and rich context.
+2. Everyday language dialogues: If the cue within parentheses is labeled "Everyday Language," generate responses that are based on typical day-to-day interactions, free from specific personas or detailed context.
 
-  else:
-    print("GPT API ERROR")
+**Dialogue History**:
+{dia_text}
 
-  if len(gpt_choice) > 0:
-    # 일단 tag 하나로 만들기
-    gpt_candidate = candidates[gpt_choice[0]].rstrip('.')
-  else:
-    gpt_candidate = "Everyday Language"
-  
-  print(f"gpt predict: ", gpt_candidate)
-  return gpt_candidate
+"""
+  return prompt
 
 
 
-
-def remove_sentences_with_phrase(text, phrase):
-    # 문장 분리를 위한 정규 표현식 사용
-    sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
-    
-    # 주어진 문구를 포함하지 않는 문장만 필터링
-    filtered_sentences = [sentence for sentence in sentences if phrase not in sentence]
-    
-    # 필터링된 문장들을 다시 하나의 문자열로 결합
-    return ' '.join(filtered_sentences)
-
-def after_extract_data(extract_informations, speaker1, speaker2):
-  info_list = [f"{speaker1}'s persona", f"{speaker2}'s persona", f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
-  remove_sen = ["There is no", "There are no", "information is not", "information cannot be", "None", "No shared", "No temporal information", "no temporal information", "no information for", "no shared"]
-            
-  for info in info_list:
-    for rem in remove_sen:
-      if rem in extract_informations[info]:
-        result_text = remove_sentences_with_phrase(extract_informations[info], rem)
-        extract_informations[info] = result_text 
-  
-  for info in info_list:
-    parts = extract_informations[info].split(":", 1)
-    if len(parts) > 1:
-       extract_informations[info] = parts[1].strip()
-  
-  return extract_informations
-
-def extract_data_from_response(gpt_extract_response, speaker1, speaker2):
-  info_list = [f"{speaker1}'s persona", f"{speaker2}'s persona", f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
-  extract_informations = {}
-  for i, k in enumerate(info_list):
-    extract_informations[k] = ''
-
-  if gpt_extract_response:
-    information = gpt_extract_response.split('***')
-    if len(information) == 8:
-      for i, k in enumerate(info_list):
-          extract_informations[k] = information[i+1]
-
-  print(extract_informations)
-  extract_informations = after_extract_data(extract_informations, speaker1, speaker2)
-
-  return extract_informations
-
-def return_sentences(text):
-    # 숫자. 없애기
-    text = re.sub(r'\d+\.\s*', '', text)
-    # 줄 바꿈 문자를 공백으로 대체합니다.
-    text = text.replace('\n', ' ')
-    # 중복된 공백을 하나의 공백으로 줄입니다.
-    text = re.sub(r'\s+', ' ', text)
-    # 예외케이스
-    text = re.sub(r'\b(Mr|Mrs|Ms|Dr|Jr|Sr|Prof)\.', r'\1<dot>', text)
-    # 정규 표현식을 사용하여 문장을 분리
-    sentence_endings = re.compile(r'(?<=\.|\?|!)\s')
-    sentences = sentence_endings.split(text.strip())
-    # 약어의 점을 원래대로 복원
-    sentences = [sentence.replace('<dot>', '.') for sentence in sentences]
-    # 빈 문자열을 제거
-    
-    return sentences
-
-def afterprocessing_extract_data(extract_data, speaker1, speaker2):
-  attr_list = [f"{speaker1}'s persona", f"{speaker2}'s persona"]
-
-  for att in attr_list:
-    sentence = extract_data[att]
-    if sentence == "":
-      continue
-    prompt = return_segment_prompt(sentence)
-    model_response = get_gpt_segment_response(prompt)
-    if model_response:
-      extract_data[att] = return_sentences(model_response)
-  info_list = [f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
-  
-  for info in info_list:
-    sentence = extract_data[info]
-    if sentence == "":
-      continue
-    extract_data[info] = return_sentences(sentence)
-  
-  return extract_data
-
-def memory_update(extract_data, speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory):
+def memory_update(extract_data, speaker1, speaker2, speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory):
    
   # accumulate
-  pass
+  def extend_list_if_not_empty(key, target_list):
+      if extract_data[key] != "":
+          target_list.extend(extract_data[key])
+
+  # 함수를 사용하여 데이터를 추가합니다.
+  extend_list_if_not_empty(f"{speaker1}'s persona", speaker1_persona)
+  extend_list_if_not_empty(f"{speaker2}'s persona", speaker2_persona)
+  extend_list_if_not_empty(f"{speaker1}'s temporal information", speaker1_temp)
+  extend_list_if_not_empty(f"{speaker2}'s temporal information", speaker2_temp)
+  extend_list_if_not_empty("Shared memories", shared_memory)
+  extend_list_if_not_empty("Mutual events", shared_memory)
 
   return speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory
 
-def make_dataset(data, outputfilename, flag):
+def episode(data, outputfilename, model, tokenizer, device):
   dataset = []
 
   count = 0 
@@ -335,34 +87,30 @@ def make_dataset(data, outputfilename, flag):
     session_dataset = []
     speaker1, speaker2 = tuple(key.replace("(", "").replace(")", "").replace("'", "").split(", "))
     conversations = value['dialogue']
-    print(speaker1, speaker2)
 
-    speaker1_persona, speaker2_persona, shared_memory = return_first_memory_set(speaker1, speaker2, conversations)
+    shared_memory = return_first_memory_set(speaker1, speaker2, conversations)
+    speaker1_persona = []
+    speaker2_persona = []
     speaker1_temp = []
     speaker2_temp = []
 
-    for session in conversations: #session 시작
+    for session in conversations[:5]: #session 시작
       data_dic = {}
       dia_text = ""
       dia_no_tag_text = ""
 
-      #dialogue
-      if flag: #train
-        dialogue_set = session['dialogues']
-      else: #valid, test
-        dialogue_set = session['dialogues'][:-1]
-
+      dialogue_set = session['dialogues'][:-1]
       for dial in dialogue_set:
         dia_text += f"{dial['speaker']}: ({remove_parentheses(dial['label'])}) {dial['text']}\n"
       for dial in dialogue_set:
         dia_no_tag_text += f"{dial['speaker']}: {dial['text']}\n"
-      
+
       dia = session['dialogues'][-1]
       prompt = return_model_prompt(dia_text)
       data_dic['prompt'] = prompt
       data_dic['answer'] = dia['text']
-      
       data_dic['last_speaker'] = dia['speaker']
+
       if data_dic['last_speaker'] == speaker1:
         candidates = speaker1_persona + shared_memory + speaker1_temp
       else:
@@ -373,27 +121,24 @@ def make_dataset(data, outputfilename, flag):
       data_dic['gold_tag'] = remove_parentheses(dia['label'])
       
       tag = data_dic['gpt_tag']
-
       #model inference
-      #utterance = model_response(prompt, tag, data_dic['last_speaker'])
-
-      utterance = "This is just sentence."
-      print(utterance)
+      utterance = model_response(prompt, tag, data_dic['last_speaker'], model, tokenizer, device)
+      data_dic['model_response'] = utterance
+      #utterance = "This is just sentence."
       dia_no_tag_text += f"{data_dic['last_speaker']}: {utterance}\n"
-
-      print(dia_text)
-      print()
       print(dia_no_tag_text)
+
       extract_prompt = return_extract_prompt(speaker1, speaker2, dia_no_tag_text)
       gpt_extract_response = get_gpt_response(extract_prompt)
       extract_data = extract_data_from_response(gpt_extract_response, speaker1, speaker2)
-      print(extract_data)
-      extract_data = afterprocessing_extract_data(extract_data, speaker1, speaker2)
-      print(extract_data)
-      speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory = memory_update(extract_data, speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory)
 
+      speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory = memory_update(extract_data, speaker1, speaker2, speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory)
+      print(extract_data)
+      print(speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory)
       
+      # save
       session_dataset.append(data_dic)
+
     dataset.append(session_dataset)
 
     count += 1
@@ -413,15 +158,31 @@ parser = argparse.ArgumentParser(description='json to excel file')
 parser.add_argument('json', type=str, help='The json file')
 args = parser.parse_args()
 
+
 my_json_file = args.json
 
 with open(my_json_file, 'r') as file:
   data = json.load(file)
 
 
-print(len(data))
+# 결과를 저장할 딕셔너리
+filtered_data = {}
+
+# 각 키에 대해 반복
+for key, value in data.items():
+    
+    if 'dialogue' in value and len(value['dialogue']) >= 5:
+        filtered_data[key] = value
+
+# 필터링된 결과 출력
+print(len(filtered_data))
+
+path = 'chano12/gemma_with_tag'
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model, tokenizer = get_peft_gemma(path, device)
+
 # 데이터 분할
-train_data, valid_data, test_data = split_data(data, random_state=42)
+train_data, valid_data, test_data = split_data(filtered_data, random_state=42)
 
 print("Train Data:", len(train_data))
 print("Validation Data:", len(valid_data))
@@ -429,4 +190,4 @@ print("Test Data:", len(test_data))
 
 #make_dataset(train_data, "train_without_tag.json", 1)
 #make_dataset(valid_data, "valid_without_tag.json", 0)
-make_dataset(test_data, "test_without_tag.json", 0)
+#episode(test_data, "test_without_tag.json", model, tokenizer, device)
