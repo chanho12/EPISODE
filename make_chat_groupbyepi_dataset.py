@@ -281,6 +281,24 @@ def extract_data_from_response(gpt_extract_response, speaker1, speaker2):
 
   return extract_informations
 
+def return_sentences(text):
+    # 숫자. 없애기
+    text = re.sub(r'\d+\.\s*', '', text)
+    # 줄 바꿈 문자를 공백으로 대체합니다.
+    text = text.replace('\n', ' ')
+    # 중복된 공백을 하나의 공백으로 줄입니다.
+    text = re.sub(r'\s+', ' ', text)
+    # 예외케이스
+    text = re.sub(r'\b(Mr|Mrs|Ms|Dr|Jr|Sr|Prof)\.', r'\1<dot>', text)
+    # 정규 표현식을 사용하여 문장을 분리
+    sentence_endings = re.compile(r'(?<=\.|\?|!)\s')
+    sentences = sentence_endings.split(text.strip())
+    # 약어의 점을 원래대로 복원
+    sentences = [sentence.replace('<dot>', '.') for sentence in sentences]
+    # 빈 문자열을 제거
+    
+    return sentences
+
 def afterprocessing_extract_data(extract_data, speaker1, speaker2):
   attr_list = [f"{speaker1}'s persona", f"{speaker2}'s persona"]
 
@@ -291,7 +309,24 @@ def afterprocessing_extract_data(extract_data, speaker1, speaker2):
     prompt = return_segment_prompt(sentence)
     model_response = get_gpt_segment_response(prompt)
     if model_response:
-      
+      extract_data[att] = return_sentences(model_response)
+  info_list = [f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
+  
+  for info in info_list:
+    sentence = extract_data[info]
+    if sentence == "":
+      continue
+    extract_data[info] = return_sentences(sentence)
+  
+  return extract_data
+
+def memory_update(extract_data, speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory):
+   
+  # accumulate
+  pass
+
+  return speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory
+
 def make_dataset(data, outputfilename, flag):
   dataset = []
 
@@ -341,7 +376,7 @@ def make_dataset(data, outputfilename, flag):
 
       #model inference
       #utterance = model_response(prompt, tag, data_dic['last_speaker'])
-      
+
       utterance = "This is just sentence."
       print(utterance)
       dia_no_tag_text += f"{data_dic['last_speaker']}: {utterance}\n"
@@ -354,7 +389,8 @@ def make_dataset(data, outputfilename, flag):
       extract_data = extract_data_from_response(gpt_extract_response, speaker1, speaker2)
       print(extract_data)
       extract_data = afterprocessing_extract_data(extract_data, speaker1, speaker2)
-      assert False
+      print(extract_data)
+      speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory = memory_update(extract_data, speaker1_persona, speaker2_persona, speaker1_temp, speaker2_temp, shared_memory)
 
       
       session_dataset.append(data_dic)
@@ -371,7 +407,7 @@ def make_dataset(data, outputfilename, flag):
 
 # main function
 
-# python make_chat_gr_dataset.py final_list_dataset.json
+# python make_chat_groupbyepi_dataset.py final_list_dataset.json
 
 parser = argparse.ArgumentParser(description='json to excel file')
 parser.add_argument('json', type=str, help='The json file')
