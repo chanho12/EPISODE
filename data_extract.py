@@ -188,7 +188,7 @@ def extract_data_from_response(gpt_extract_response, speaker1, speaker2):
       for i, k in enumerate(info_list):
           extract_informations[k] = information[i+1]
 
-  #정보가 없는거 처리, 콜론 다음 정보만 넣기
+  # 정보가 없는거 처리, 콜론 다음 정보만 넣기
   extract_informations = after_extract_data(extract_informations, speaker1, speaker2)
   # parsing dataset
   extract_informations = afterprocessing_extract_data(extract_informations, speaker1, speaker2)
@@ -218,7 +218,7 @@ def return_sentences(text):
 def afterprocessing_extract_data(extract_data, speaker1, speaker2):
   attr_list = [f"{speaker1}'s persona", f"{speaker2}'s persona"]
 
-  #data segment parsing
+  #data segment parsing - persona return: List
   for att in attr_list:
     sentence = extract_data[att]
     if sentence == "":
@@ -227,8 +227,10 @@ def afterprocessing_extract_data(extract_data, speaker1, speaker2):
     model_response = get_gpt_segment_response(prompt)
     if model_response:
       extract_data[att] = return_sentences(model_response)
+  
   info_list = [f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
   
+  #data segment parsing - return : List
   for info in info_list:
     sentence = extract_data[info]
     if sentence == "":

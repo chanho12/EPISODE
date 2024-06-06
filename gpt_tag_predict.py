@@ -88,9 +88,9 @@ number3 : candidate response text
 
 
 def make_tag_by_gpt_dataset(dialogue_history, candidates): #tag 추천 gpt-3.5
+  candidates.extend(['Everyday Language'])
   candidates_string = "\n".join([f"{idx}. {value}" for idx, value in enumerate(candidates)])
   prompt = return_tag_prompt(dialogue_history, candidates_string)
-  #print(prompt)
   print("Get GPT tag predict!")
   response = get_gpt_tag_response(prompt)
   gpt_choice = []
@@ -112,12 +112,15 @@ def make_tag_by_gpt_dataset(dialogue_history, candidates): #tag 추천 gpt-3.5
 
   if len(gpt_choice) > 0:
     # 일단 tag 하나로 만들기
-    gpt_candidate = ", ".join([
-    f"{candidates[idx].rstrip('.')}" 
-    for idx in gpt_choice
-    if not (len(gpt_choice) >= 2 and candidates[idx] == 'Everyday Language')
-    ])
-    #gpt_candidate = candidates[gpt_choice[0]].rstrip('.')
+    try:
+      gpt_candidate = ", ".join([
+      f"{candidates[idx].rstrip('.')}" 
+      for idx in gpt_choice
+      if not (len(gpt_choice) >= 2 and candidates[idx] == 'Everyday Language')
+      ])
+      #gpt_candidate = candidates[gpt_choice[0]].rstrip('.')
+    except:
+      gpt_candidate = "Everyday Language"
   else:
     gpt_candidate = "Everyday Language"
   

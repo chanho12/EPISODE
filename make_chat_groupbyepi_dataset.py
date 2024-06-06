@@ -152,7 +152,7 @@ def episode(data, outputfilename, model, tokenizer, device):
 
 # main function
 
-# python make_chat_groupbyepi_dataset.py final_list_dataset.json
+# python make_chat_groupbyepi_dataset.py list_dataset.json
 
 parser = argparse.ArgumentParser(description='json to excel file')
 parser.add_argument('json', type=str, help='The json file')
@@ -190,4 +190,4 @@ print("Test Data:", len(test_data))
 
 #make_dataset(train_data, "train_without_tag.json", 1)
 #make_dataset(valid_data, "valid_without_tag.json", 0)
-#episode(test_data, "test_without_tag.json", model, tokenizer, device)
+episode(test_data, "test_without_tag.json", model, tokenizer, device)
