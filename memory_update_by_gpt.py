@@ -10,8 +10,6 @@ import os
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def load_data(file_path):
 	with open(file_path, 'r') as file:
 		data = json.load(file)
@@ -110,7 +108,6 @@ number1 : candidate response text
 number2 : candidate response text
 number3 : candidate response text
 """
-
     return prompt
 
 
@@ -150,7 +147,11 @@ def memory_update(data):
 
 
 ###main###
+def main():
+    file_name = "list_dataset.json"
+    data = load_data(file_name)
+    memory_update(data)
 
-file_name = "test.json"
-data = load_data(file_name)
-memory_update(data)
+
+if __name__ == '__main__':
+    main()

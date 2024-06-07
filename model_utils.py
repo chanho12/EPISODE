@@ -42,7 +42,7 @@ def get_peft_llama(path, device):
 	print(path)
 	config = PeftConfig.from_pretrained(path)
 	tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path,fast_tokenizer=True)
-	model= AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, load_8bits = True)
+	model= AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, load_in_8bit = True)
 	model = PeftModel.from_pretrained(model, path)
 
 	model.to(device)
@@ -65,23 +65,22 @@ def get_peft_gemma(path, device):
 
 
 
-def model_response(prompt, tag, next_speaker,model, tokenizer,device):
+def model_response(prompt, tag, next_speaker, model, tokenizer, device):
+    last_utter = f"{next_speaker}: ({tag})"
+    dialogue = prompt.rstrip() + '\n' + last_utter
+    input_ = tokenizer(dialogue, return_tensors = 'pt').to(device)
+    output = generate(model,tokenizer,
+                                    input_,
+                                    num_beams=1,
+                                    num_return_sequences=1,
+                                    max_new_tokens=200)
+    ### utterance : correct answer
+    ### response : Model-generated answer
+    response = output.replace(dialogue, '').split("\n")[0].strip()
 
-  last_utter = f"{next_speaker} : ({tag}) "
-  dialogue = prompt + last_utter
-
-  input_ = tokenizer(dialogue, return_tensors = 'pt').to(device)
-  output = generate(model,tokenizer,
-                                input_,
-                                num_beams=1,
-                                num_return_sequences=1,
-                                max_new_tokens=100)
-
-
-  ### utterance : correct answer
-  ### response : Model-generated answer
-  response = output.replace(dialogue, '').split("\n")[0]
-
-  return response
+    print('-'*100)
+    print(response)
+    print('*'*100)
+    return response
 
 
