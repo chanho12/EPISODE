@@ -1,25 +1,21 @@
 import os
 from openai import OpenAI
 import re
+
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-def get_gpt_response(prompt):
 
+def get_gpt_response(prompt):
     try:
         response = client.chat.completions.create(
-        model = "gpt-4",
-        messages=[
-            {
-            "role": "user",
-            "content": f"{prompt}"
-            }
-        ],
-        temperature=0.9,
-        max_tokens=300,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
+            model="gpt-4",
+            messages=[{"role": "user", "content": f"{prompt}"}],
+            temperature=0.9,
+            max_tokens=300,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
         )
 
     except Exception as e:
@@ -27,73 +23,72 @@ def get_gpt_response(prompt):
         print("error: ", error_str)
 
         return None
-    
+
     if response.choices:
         model_response = response.choices[0].message.content
         return model_response
     else:
         return None
 
+
 def get_gpt_segment_response(prompt):
-  try:
-    response = client.chat.completions.create(
-    model="gpt-3.5-turbo-0125",
-    messages=[
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"THUMPER is direct and confrontational, using strong language. He appears to be knowledgeable about psychodynamics, specifically repression.\"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. THUMPER is direct and confrontational.\n2. THUMPER uses strong language.\n3. THUMPER is knowledgeable about psychodynamics. specifically repression."
-      },
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"ADA seems to be inexperienced or lacks knowledge about farming and livestock, evident from her limited understanding of the uses of pigs besides hams.\"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. ADA lacks knowledge about farming and livestock.\n2. ADA has a limited understanding of the uses of pigs besides hams."
-      },
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"Anna's upcoming film, which begins shooting in L.A. on Tuesday, is her significant temporal information. \"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. Anna's upcoming film begins shooting in L.A. on Tuesday."
-      },
-      {
-        "role": "user",
-        "content": "Please break down the following sentence into its core factual components without overly splitting the content. \n\n\"DOROTHY seems to have a threatening and unstable demeanor, and expresses a need for help.\"\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like \"appears\" or \"seems\" with more definitive expressions such as \"is\" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications."
-      },
-      {
-        "role": "assistant",
-        "content": "1. DOROTHY has a threatening and unstable demeanor. \n2. DOROTHY expresses a need for help."
-      },
-      {
-        "role": "user",
-        "content": f"{prompt}"
-      }
-      ],
-      temperature=0.3,
-      max_tokens=1000,
-      top_p=1,
-      frequency_penalty=0,
-      presence_penalty=0
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-0125",
+            messages=[
+                {
+                    "role": "user",
+                    "content": 'Please break down the following sentence into its core factual components without overly splitting the content. \n\n"THUMPER is direct and confrontational, using strong language. He appears to be knowledgeable about psychodynamics, specifically repression."\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like "appears" or "seems" with more definitive expressions such as "is" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications.',
+                },
+                {
+                    "role": "assistant",
+                    "content": "1. THUMPER is direct and confrontational.\n2. THUMPER uses strong language.\n3. THUMPER is knowledgeable about psychodynamics. specifically repression.",
+                },
+                {
+                    "role": "user",
+                    "content": 'Please break down the following sentence into its core factual components without overly splitting the content. \n\n"ADA seems to be inexperienced or lacks knowledge about farming and livestock, evident from her limited understanding of the uses of pigs besides hams."\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like "appears" or "seems" with more definitive expressions such as "is" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications.',
+                },
+                {
+                    "role": "assistant",
+                    "content": "1. ADA lacks knowledge about farming and livestock.\n2. ADA has a limited understanding of the uses of pigs besides hams.",
+                },
+                {
+                    "role": "user",
+                    "content": 'Please break down the following sentence into its core factual components without overly splitting the content. \n\n"Anna\'s upcoming film, which begins shooting in L.A. on Tuesday, is her significant temporal information. "\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like "appears" or "seems" with more definitive expressions such as "is" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications.',
+                },
+                {
+                    "role": "assistant",
+                    "content": "1. Anna's upcoming film begins shooting in L.A. on Tuesday.",
+                },
+                {
+                    "role": "user",
+                    "content": 'Please break down the following sentence into its core factual components without overly splitting the content. \n\n"DOROTHY seems to have a threatening and unstable demeanor, and expresses a need for help."\n\nFor the output, list each cohesive factual unit with a number as follows:\n1. \n2.\n3.\n\nEnsure the breakdown retains natural phrasing while omitting any references to the significance, nature of the information, and discussions about the basis of any claims.\nReplace uncertain terms like "appears" or "seems" with more definitive expressions such as "is" to ensure the sentences convey clear and assertive information.\nMake sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications.',
+                },
+                {
+                    "role": "assistant",
+                    "content": "1. DOROTHY has a threatening and unstable demeanor. \n2. DOROTHY expresses a need for help.",
+                },
+                {"role": "user", "content": f"{prompt}"},
+            ],
+            temperature=0.3,
+            max_tokens=1000,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+        )
 
-  except Exception as e:
-    error_str = str(e)
-    print("error: ", error_str)
+    except Exception as e:
+        error_str = str(e)
+        print("error: ", error_str)
 
-    return None
-  
-  if response.choices:
-      model_response = response.choices[0].message.content
-      return model_response
-  else:
-      return None
+        return None
+
+    if response.choices:
+        model_response = response.choices[0].message.content
+        return model_response
+    else:
+        return None
+
 
 def return_extract_prompt(speaker1, speaker2, dialogues_text):
     prompt = f"""You are a conversation analyst tasked with examining two conversations.
@@ -134,9 +129,9 @@ Ensure that each analysis output is succinct, covering only the essential elemen
 
     return prompt
 
+
 def return_segment_prompt(sentence):
-   
-  prompt = f"""Please break down the following sentence into its core factual components without overly splitting the content. 
+    prompt = f"""Please break down the following sentence into its core factual components without overly splitting the content. 
 
               “{sentence}”
 
@@ -146,95 +141,132 @@ def return_segment_prompt(sentence):
               Replace uncertain terms like "appears" or "seems" with more definitive expressions such as "is" to ensure the sentences convey clear and assertive information.
               Make sure to write in complete sentences and preserve the natural flow of information, excluding any explanations or justifications.
               """
-  return prompt
+    return prompt
+
 
 def remove_sentences_with_phrase(text, phrase):
     # 문장 분리를 위한 정규 표현식 사용
-    sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
-    
+    sentences = re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", text)
+
     # 주어진 문구를 포함하지 않는 문장만 필터링
     filtered_sentences = [sentence for sentence in sentences if phrase not in sentence]
-    
+
     # 필터링된 문장들을 다시 하나의 문자열로 결합
-    return ' '.join(filtered_sentences)
+    return " ".join(filtered_sentences)
+
 
 def after_extract_data(extract_informations, speaker1, speaker2):
-  info_list = [f"{speaker1}'s persona", f"{speaker2}'s persona", f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
-  remove_sen = ["There is no", "There are no", "information is not", "information cannot be", "None", "No shared", "No temporal information", "no temporal information", "no information for", "no shared"]
-            
-  for info in info_list:
-    for rem in remove_sen:
-      if rem in extract_informations[info]:
-        result_text = remove_sentences_with_phrase(extract_informations[info], rem)
-        extract_informations[info] = result_text 
-  
-  for info in info_list:
-    parts = extract_informations[info].split(":", 1)
-    if len(parts) > 1:
-       extract_informations[info] = parts[1].strip()
-  
-  return extract_informations
+    info_list = [
+        f"{speaker1}'s persona",
+        f"{speaker2}'s persona",
+        f"{speaker1}'s temporal information",
+        f"{speaker2}'s temporal information",
+        "Shared memories",
+        "Mutual events",
+    ]
+    remove_sen = [
+        "There is no",
+        "There are no",
+        "information is not",
+        "information cannot be",
+        "None",
+        "No shared",
+        "No temporal information",
+        "no temporal information",
+        "no information for",
+        "no shared",
+    ]
+
+    for info in info_list:
+        for rem in remove_sen:
+            if rem in extract_informations[info]:
+                result_text = remove_sentences_with_phrase(
+                    extract_informations[info], rem
+                )
+                extract_informations[info] = result_text
+
+    for info in info_list:
+        parts = extract_informations[info].split(":", 1)
+        if len(parts) > 1:
+            extract_informations[info] = parts[1].strip()
+
+    return extract_informations
+
 
 def extract_data_from_response(gpt_extract_response, speaker1, speaker2):
-  info_list = [f"{speaker1}'s persona", f"{speaker2}'s persona", f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
-  extract_informations = {}
-  for i, k in enumerate(info_list):
-    extract_informations[k] = ''
+    info_list = [
+        f"{speaker1}'s persona",
+        f"{speaker2}'s persona",
+        f"{speaker1}'s temporal information",
+        f"{speaker2}'s temporal information",
+        "Shared memories",
+        "Mutual events",
+    ]
+    extract_informations = {}
+    for i, k in enumerate(info_list):
+        extract_informations[k] = ""
 
-  #gpt-4를 통해 얻은 정보 넣기
-  if gpt_extract_response:
-    information = gpt_extract_response.split('***')
-    if len(information) == 8:
-      for i, k in enumerate(info_list):
-          extract_informations[k] = information[i+1]
+    # gpt-4를 통해 얻은 정보 넣기
+    if gpt_extract_response:
+        information = gpt_extract_response.split("***")
+        if len(information) == 8:
+            for i, k in enumerate(info_list):
+                extract_informations[k] = information[i + 1]
 
-  # 정보가 없는거 처리, 콜론 다음 정보만 넣기
-  extract_informations = after_extract_data(extract_informations, speaker1, speaker2)
-  # parsing dataset
-  extract_informations = afterprocessing_extract_data(extract_informations, speaker1, speaker2)
+    # 정보가 없는거 처리, 콜론 다음 정보만 넣기
+    extract_informations = after_extract_data(extract_informations, speaker1, speaker2)
+    # parsing dataset
+    extract_informations = afterprocessing_extract_data(
+        extract_informations, speaker1, speaker2
+    )
 
-  return extract_informations
-
+    return extract_informations
 
 
 def return_sentences(text):
     # 숫자. 없애기
-    text = re.sub(r'\d+\.\s*', '', text)
+    text = re.sub(r"\d+\.\s*", "", text)
     # 줄 바꿈 문자를 공백으로 대체합니다.
-    text = text.replace('\n', ' ')
+    text = text.replace("\n", " ")
     # 중복된 공백을 하나의 공백으로 줄입니다.
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\s+", " ", text)
     # 예외케이스
-    text = re.sub(r'\b(Mr|Mrs|Ms|Dr|Jr|Sr|Prof)\.', r'\1<dot>', text)
+    text = re.sub(r"\b(Mr|Mrs|Ms|Dr|Jr|Sr|Prof)\.", r"\1<dot>", text)
     # 정규 표현식을 사용하여 문장을 분리
-    sentence_endings = re.compile(r'(?<=\.|\?|!)\s')
+    sentence_endings = re.compile(r"(?<=\.|\?|!)\s")
     sentences = sentence_endings.split(text.strip())
     # 약어의 점을 원래대로 복원
-    sentences = [sentence.replace('<dot>', '.') for sentence in sentences]
+    sentences = [sentence.replace("<dot>", ".") for sentence in sentences]
     # 빈 문자열을 제거
-    
+
     return sentences
 
-def afterprocessing_extract_data(extract_data, speaker1, speaker2):
-  attr_list = [f"{speaker1}'s persona", f"{speaker2}'s persona"]
 
-  #data segment parsing - persona return: List
-  for att in attr_list:
-    sentence = extract_data[att]
-    if sentence == "":
-      continue
-    prompt = return_segment_prompt(sentence)
-    model_response = get_gpt_segment_response(prompt)
-    if model_response:
-      extract_data[att] = return_sentences(model_response)
-  
-  info_list = [f"{speaker1}'s temporal information", f"{speaker2}'s temporal information", "Shared memories", "Mutual events"]
-  
-  #data segment parsing - return : List
-  for info in info_list:
-    sentence = extract_data[info]
-    if sentence == "":
-      continue
-    extract_data[info] = return_sentences(sentence)
-  
-  return extract_data
+def afterprocessing_extract_data(extract_data, speaker1, speaker2):
+    attr_list = [f"{speaker1}'s persona", f"{speaker2}'s persona"]
+
+    # data segment parsing - persona return: List
+    for att in attr_list:
+        sentence = extract_data[att]
+        if sentence == "":
+            continue
+        prompt = return_segment_prompt(sentence)
+        model_response = get_gpt_segment_response(prompt)
+        if model_response:
+            extract_data[att] = return_sentences(model_response)
+
+    info_list = [
+        f"{speaker1}'s temporal information",
+        f"{speaker2}'s temporal information",
+        "Shared memories",
+        "Mutual events",
+    ]
+
+    # data segment parsing - return : List
+    for info in info_list:
+        sentence = extract_data[info]
+        if sentence == "":
+            continue
+        extract_data[info] = return_sentences(sentence)
+
+    return extract_data
