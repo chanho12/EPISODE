@@ -10,7 +10,7 @@ from data_extract import (
 )
 from gpt_tag_predict import make_tag_by_gpt_dataset
 import torch
-
+from memory_update_by_gpt import memory_gpt_update
 
 def remove_parentheses(text):
     pattern = r"\([^()]*\)"
@@ -44,7 +44,6 @@ def split_data(data, train_size=0.8, valid_size=0.1, test_size=0.1, random_state
 
 
 def return_first_memory_set(conversations):
-    # 오직 shared memory만
     shared = []
 
     for session in conversations:
@@ -130,11 +129,15 @@ def episode(data, tag_type, update_method, outputfilename, model, tokenizer, dev
     count = 0
 
     for key, value in data.items():  # episode
+        print("!!!!!!!!!!NEW EPISODE!!!!!!!!!!")
         session_dataset = []
         speaker1, speaker2 = tuple(
             key.replace("(", "").replace(")", "").replace("'", "").split(", ")
         )
         conversations = value["dialogue"]
+
+        if count > 5:
+            break
 
         shared_memory = return_first_memory_set(conversations)
         speaker1_persona = []
@@ -144,9 +147,9 @@ def episode(data, tag_type, update_method, outputfilename, model, tokenizer, dev
 
         for session in conversations[:5]:  # session
             data_dic = {}
+            print("!!!!!!NEW SESSION!!!!!!")
 
             dia_text, dia_no_tag_text = make_dialouges(session)
-
             last = session["dialogues"][-1]
             prompt = return_model_prompt(dia_text)
             data_dic["answer"] = last["text"]
@@ -171,6 +174,10 @@ def episode(data, tag_type, update_method, outputfilename, model, tokenizer, dev
             )
             data_dic["model_response"] = utterance
             dia_no_tag_text += f"{last_speaker}: {utterance}\n"
+
+            print('*'*50, "Dialouge", '*'*20)
+            print(dia_no_tag_text)
+            print('*'*100)
 
             # model extract
             extract_prompt = return_extract_prompt(speaker1, speaker2, dia_no_tag_text)
@@ -197,14 +204,32 @@ def episode(data, tag_type, update_method, outputfilename, model, tokenizer, dev
                     speaker2_temp,
                     shared_memory,
                 )
+            else:
+                 (
+                    speaker1_persona,
+                    speaker2_persona,
+                    speaker1_temp,
+                    speaker2_temp,
+                    shared_memory,
+                ) = memory_gpt_update(
+                    extract_data,
+                    speaker1,
+                    speaker2,
+                    speaker1_persona,
+                    speaker2_persona,
+                    speaker1_temp,
+                    speaker2_temp,
+                    shared_memory,
+                )               
 
             # debugging
-            # print(f"{speaker1}'s persona: {speaker1_persona}")
-            # print(f"{speaker2}'s persona: {speaker2_persona}")
-            # print(f"{speaker1}'s tem: {speaker1_temp}")
-            # print(f"{speaker2}'s tem: {speaker2_temp}")
-            # print(f"shared memory: {shared_memory}")
-
+            print("Session Done! information set\n")
+            print(f"{speaker1}'s persona: {speaker1_persona}")
+            print(f"{speaker2}'s persona: {speaker2_persona}")
+            print(f"{speaker1}'s tem: {speaker1_temp}")
+            print(f"{speaker2}'s tem: {speaker2_temp}")
+            print(f"shared memory: {shared_memory}")
+            print()
             # save
             session_dataset.append(data_dic)
 
@@ -219,7 +244,6 @@ def episode(data, tag_type, update_method, outputfilename, model, tokenizer, dev
 
 
 # main function
-
 # python main.py --path='chano12/llama_with_tag' --tag_type='gold' --update_method='accumulate' --input_file=list_dataset.json --output_file='goldtag_llama_accumulate.json'
 # python main.py --path='chano12/llama_with_tag' --tag_type='gpt' --update_method='accumulate' --input_file=list_dataset.json --output_file='gpttag_llama_accumulate.json'
 
@@ -241,7 +265,6 @@ def main():
 
     filtered_data = load_data(my_json_file)
     # 필터링된 결과 출력
-    print(len(filtered_data))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

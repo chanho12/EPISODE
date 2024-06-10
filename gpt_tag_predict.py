@@ -89,7 +89,6 @@ def make_tag_by_gpt_dataset(dialogue_history, candidates):  # tag 추천 gpt-3.5
         [f"{idx}. {value}" for idx, value in enumerate(candidates)]
     )
     prompt = return_tag_prompt(dialogue_history, candidates_string)
-    print("Get GPT tag predict!")
     response = get_gpt_tag_response(prompt)
     gpt_choice = []
 
@@ -126,5 +125,7 @@ def make_tag_by_gpt_dataset(dialogue_history, candidates):  # tag 추천 gpt-3.5
     else:
         gpt_candidate = "Everyday Language"
 
+    print("^"*100)
     print(f"gpt predict: ", gpt_candidate)
+    print("^"*100)
     return gpt_candidate

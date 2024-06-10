@@ -98,7 +98,4 @@ def model_response(prompt, tag, next_speaker, model, tokenizer, device):
     ### response : Model-generated answer
     response = output.replace(dialogue, "").split("\n")[0].strip()
 
-    print("-" * 100)
-    print(response)
-    print("*" * 100)
     return response
